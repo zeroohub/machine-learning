@@ -22,6 +22,7 @@ class LearningAgent(Agent):
 
         self.first_run = True
         self.last_deadline = 0
+        self.t = 0.0
 
     def reset(self, destination=None, testing=False):
         """ The reset function is called at the beginning of each trial.
@@ -29,8 +30,11 @@ class LearningAgent(Agent):
             once training trials have completed. """
 
         # Select the destination as the new location to route to
+        self.t += 1
         self.planner.route_to(destination)
-        self.epsilon -= 0.05
+        self.epsilon = 1 / math.pow(self.t, 2)
+        self.alpha = 1 / self.t
+
         if testing:
             self.epsilon = 0
             self.alpha = 0
@@ -67,6 +71,7 @@ class LearningAgent(Agent):
 
         state = (is_closer, waypoint, inputs['light'], is_waypoint_valid)
         self.last_deadline = deadline
+        # state = (deadline, waypoint, inputs['light'], inputs['oncoming'], inputs['right'], inputs['left'])
         return state
 
 
@@ -168,7 +173,7 @@ def run():
     #   display      - set to False to disable the GUI if PyGame is enabled
     #   log_metrics  - set to True to log trial and simulation results to /logs
     #   optimized    - set to True to change the default log file name
-    sim = Simulator(env, update_delay=0.005, log_metrics=True, display=False)
+    sim = Simulator(env, update_delay=0, log_metrics=True, display=False, optimized=True)
 
     ##############
     # Run the simulator
