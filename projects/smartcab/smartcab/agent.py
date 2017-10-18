@@ -32,8 +32,10 @@ class LearningAgent(Agent):
         # Select the destination as the new location to route to
         self.t += 1
         self.planner.route_to(destination)
-        self.epsilon = 1 / math.pow(self.t, 2)
+        self.epsilon -= 0.001
+        # self.epsilon = math.cos(self.alpha*self.t)
         self.alpha = 1 / self.t
+
 
         if testing:
             self.epsilon = 0
@@ -48,30 +50,30 @@ class LearningAgent(Agent):
         waypoint = self.planner.next_waypoint()  # The next waypoint
         inputs = self.env.sense(self)  # Visual input - intersection light and traffic
         deadline = self.env.get_deadline(self)  # Remaining deadline
-
-        if self.first_run:
-            self.first_run = False
-            self.last_deadline = deadline
-
-
-        is_waypoint_valid = True
-        if waypoint == 'forward':
-            if inputs['left'] == 'forward' or inputs['right'] == 'forward':
-                is_waypoint_valid = False
-        elif waypoint == 'left':
-            if inputs['left'] == 'forward' or inputs['right'] == 'forward':
-                is_waypoint_valid = False
-            elif inputs['oncoming'] == 'right':
-                is_waypoint_valid = False
-        elif waypoint == 'right':
-            if inputs['left'] == 'forward':
-                is_waypoint_valid = False
-
-        is_closer = self.last_deadline - deadline > 0
-
-        state = (is_closer, waypoint, inputs['light'], is_waypoint_valid)
-        self.last_deadline = deadline
-        # state = (deadline, waypoint, inputs['light'], inputs['oncoming'], inputs['right'], inputs['left'])
+        #
+        # if self.first_run:
+        #     self.first_run = False
+        #     self.last_deadline = deadline
+        #
+        #
+        # is_waypoint_valid = True
+        # if waypoint == 'forward':
+        #     if inputs['left'] == 'forward' or inputs['right'] == 'forward':
+        #         is_waypoint_valid = False
+        # elif waypoint == 'left':
+        #     if inputs['left'] == 'forward' or inputs['right'] == 'forward':
+        #         is_waypoint_valid = False
+        #     elif inputs['oncoming'] == 'right':
+        #         is_waypoint_valid = False
+        # elif waypoint == 'right':
+        #     if inputs['left'] == 'forward':
+        #         is_waypoint_valid = False
+        #
+        # is_closer = self.last_deadline - deadline > 0
+        #
+        # state = (is_closer, waypoint, inputs['light'], is_waypoint_valid)
+        # self.last_deadline = deadline
+        state = (waypoint, inputs['light'], inputs['oncming'], inputs['right'], inputs['left'])
         return state
 
 
@@ -119,11 +121,8 @@ class LearningAgent(Agent):
             receives a reward. This function does not consider future rewards 
             when conducting learning. """
 
-        ########### 
-        ## TO DO ##
-        ###########
-        # When learning, implement the value iteration update rule
-        #   Use only the learning rate 'alpha' (do not use the discount factor 'gamma')
+        if not self.learning:
+            return
         next_state = self.build_state()
         self.createQ(next_state)
         self.Q[state][action] = reward + (1 - self.alpha) * self.Q[state][action] + self.alpha * self.get_max_q(next_state)[1]
@@ -158,7 +157,7 @@ def run():
     #   learning   - set to True to force the driving agent to use Q-learning
     #    * epsilon - continuous value for the exploration factor, default is 1
     #    * alpha   - continuous value for the learning rate, default is 0.5
-    agent = env.create_agent(LearningAgent, learning=True)
+    agent = env.create_agent(LearningAgent, learning=True, alpha=0.6)
 
     ##############
     # Follow the driving agent
